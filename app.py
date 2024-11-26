@@ -8,9 +8,21 @@ import datetime
 import hashlib
 from database import MongoDBHelper
 from bson.objectid import ObjectId
+from functools import wraps
 
 web_app = Flask("MediTrack")
 db_helper = MongoDBHelper()
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if user is logged in
+        if "email" not in session or not session["email"]:
+            # Redirect to login page if not logged in
+            return render_template("index.html")
+        return f(*args, **kwargs)
+    return decorated_function
 
 @web_app.route("/") 
 def index():
@@ -53,8 +65,7 @@ def error():
 
 @web_app.route("/logout")
 def logout():
-    session["email"] == ""
-    session["name"] == ""
+    session.clear()
     return redirect("/")
 
 @web_app.route("/add-user", methods= ["POST"])
@@ -99,6 +110,7 @@ def fetch_user_from_db():
         return render_template("error.html", message ="User Not Found. Please Try Again", name= session['name'], email=session['email'])
    
 @web_app.route("/add-patient", methods= ["POST"])
+@login_required
 def add_patient_in_db():
     
     patient_data = {
@@ -120,6 +132,7 @@ def add_patient_in_db():
     return render_template("success.html", message = "Patient added Successfully." , name= session['name'], email=session['email'] )
 
 @web_app.route("/update-patient/<id>")
+@login_required
 def update_patient(id):
     print("Patient to be updated: ", id)
 
@@ -135,6 +148,7 @@ def update_patient(id):
     return render_template("update.html", name= session['name'], email=session['email'], patient = patient_doc )
 
 @web_app.route("/update-patient-in-db", methods= ["POST"])
+@login_required
 def update_patient_in_db():
    
     patient_data = {
@@ -157,6 +171,7 @@ def update_patient_in_db():
     return render_template("success.html", message = "Patient Updated Successfully." , name= session['name'], email=session['email'] )
 
 @web_app.route("/delete-patient/<id>")
+@login_required
 def delete_patient(id):
     print("Patient to be deleted: ", id)
     query = {"_id": ObjectId(id)}
@@ -165,6 +180,7 @@ def delete_patient(id):
     return render_template("success.html", message = "Patient Deleted Successfully." , name= session['name'], email=session['email'] )
 
 @web_app.route("/fetch-patients")
+@login_required
 def fetch_patients_from_db():
       
     if len(session["email"]) == 0:
@@ -184,6 +200,7 @@ def fetch_patients_from_db():
         return render_template("error.html", message ="Patients Not Found" , name= session['name'], email=session['email'])
 
 @web_app.route("/add-consultation/<id>")
+@login_required
 def add_consultation(id):
     session["patient_id"] = id
     query = {"_id": ObjectId(id)}
@@ -196,6 +213,7 @@ def add_consultation(id):
     return render_template("add-consultation.html", name= session['name'], email = session['email'], patient_name=session["patient_name"])
 
 @web_app.route("/add-consultation-in-db", methods= ["POST"])
+@login_required
 def add_consultation_in_db():
     consultation_data = {
         "complaints": request.form["complaints"],
@@ -218,6 +236,7 @@ def add_consultation_in_db():
     return render_template("success.html", message = "Consultation added Successfully." , name= session['name'], email=session['email']  )
 
 @web_app.route("/fetch-consultations")
+@login_required
 def fetch_consultations_from_db():
       
     if len(session["email"]) == 0:
@@ -237,6 +256,7 @@ def fetch_consultations_from_db():
         return render_template("error.html", message ="Consultations Not Found" , name= session['name'], email=session['email'])
 
 @web_app.route("/fetch-consultations-of-patient/<id>")
+@login_required
 def fetch_consultations_of_patient_from_db(id):
       
     if len(session["email"]) == 0:
@@ -256,6 +276,7 @@ def fetch_consultations_of_patient_from_db(id):
         return render_template("error.html", message ="Consultations Not Found" , name= session['name'], email=session['email'])
 
 @web_app.route("/delete-consultation/<id>")
+@login_required
 def delete_consultation(id):
     print("Consultation to be deleted: ", id)
     query = {"patient_id": id}
@@ -264,6 +285,7 @@ def delete_consultation(id):
     return render_template("success.html", message = "Consultation Deleted Successfully." , name= session['name'], email=session['email'] )
 
 @web_app.route("/update-consultation/<id>")
+@login_required
 def update_consultation(id):
     print("Consultation to be updated: ", id)
 
@@ -276,6 +298,7 @@ def update_consultation(id):
     return render_template("update-cons.html", name= session['name'], email=session['email'], consultation = consultation_doc )
 
 @web_app.route("/update-consultation-in-db", methods= ["POST"])
+@login_required
 def update_consultation_in_db():
     consultation_data = {
         "complaints": request.form["complaints"],
@@ -297,6 +320,7 @@ def update_consultation_in_db():
     return render_template("success.html", message = "Consultation Updated Successfully." , name= session['name'], email=session['email'] )
 
 @web_app.route("/search-patient")
+@login_required
 def search_patient():
     return render_template("search.html", name=session["name"], email= session["email"])
 
